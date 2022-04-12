@@ -1,20 +1,21 @@
 const express = require('express');
 const app = express();
-const port = 8887;
+const port = 8888;
 const bodyParser = require('body-parser');
 
 app.use(bodyParser.json());
 
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Methods", "PUT, PATCH, DELETE");
-  res.header("Access-Control-Allow-Headers", "Origin, X - Requested - With, Content - Type, Accept");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content - Type, Accept");
   next();
 })
 
 app.listen(port, () => console.log(`Server running at localhost:
 ${port}!`))
 
+///////make it independent/////////////
 const mongoose = require('mongoose');
 const DataBase = 'mongodb://localhost:27017/quotations';
 const quoteSchema = new mongoose.Schema({
@@ -33,10 +34,11 @@ const quoteSchema = new mongoose.Schema({
   }]
 });
 const quote = mongoose.model('quote', quoteSchema);
-mongoose.connect(DataBase,
-  { useNewUrlParser: true, useUnifiedTopology: true });
+mongoose.connect(DataBase, { useNewUrlParser: false, useUnifiedTopology: false });
 const db = mongoose.connection;
 db.on('error', (err) => { console.log(err); })
+////////////////////////////////////
+
 db.once('open', () => {
 
   app.post('/add', (req, res) => {
@@ -44,13 +46,23 @@ db.once('open', () => {
     quote.create(input)
       .then(
         result => {
-          res.send({ "message": 'Record added' });
+          console.log(result);
         },
         err => { res.send(err.message); })
       .catch(err => { console.log(err); });
   });
 
   app.get('/listAll', (req, res) => {
+    quote.find()
+      .then(
+        result => {
+          res.send(result);
+        },
+        err => { res.send(err.message); })
+      .catch(err => { console.log(err); });
+  });
+
+  app.get('/listOne', (req, res) => {
     input = req.query;
     quote.find(input)
       .then(
@@ -61,7 +73,7 @@ db.once('open', () => {
       .catch(err => { console.log(err); });
   });
 
-  app.get('/deleteAll', (res) => {
+  app.delete('/deleteAll', (res) => {
     quote.deleteMany()
       .then(
         result => {
@@ -71,15 +83,27 @@ db.once('open', () => {
       .catch(err => { console.log(err); });
   });
 
-  app.get('/deleteOne', (req, res) => {
+  app.delete('/deleteOne', (req, res) => {
     input = req.query;
     quote.deleteOne(input)
-    .then(
-      result => {
-        console.log("One Record Deleted")
-      },
-      err => { res.send(err.message); })
+      .then(
+        result => {
+          console.log("One Record Deleted");
+        },
+        err => { res.send(err.message); })
       .catch(err => { console.log(err); });
   });
 
+  app.put('/update', (req, res) => {
+    id = req.body.Id;
+    newInfo = req.body.params;
+    quote.updateOne(id, { $set: newInfo })
+      .then(
+        result => {
+          res.send(result);
+          console.log("Quote Updated")
+        },
+        err => { res.send(err.message); })
+      .catch(err => { console.log(err); });
+  });
 });
