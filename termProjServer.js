@@ -64,10 +64,14 @@ db.once('open', () => {
 
   app.get('/listOne', (req, res) => {
     input = req.query;
+    console.log(input)
     quote.find(input)
       .then(
         result => {
+          console.log("Listing One:")
           res.send(result);
+          console.log(result);
+          console.log("--------------------------")
         },
         err => { res.send(err.message); })
       .catch(err => { console.log(err); });
@@ -95,9 +99,10 @@ db.once('open', () => {
   });
 
   app.put('/update', (req, res) => {
-    id = req.body.Id;
-    newInfo = req.body.params;
-    quote.updateOne(id, { $set: newInfo })
+    id = req.body.params[0].id;
+    console.log(id)
+    newInfo = req.body.params[1];
+    quote.updateOne({_id: id}, { $set: newInfo })
       .then(
         result => {
           res.send(result);
